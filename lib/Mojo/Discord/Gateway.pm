@@ -203,6 +203,18 @@ sub gw_resume
     $self->gw_connect($self->gateway(), 1);
 }
 
+sub gw_reconnect
+{
+    my ($self, $resume) = @_;
+    eval {
+        $self->gw_connect($self->gateway(), $resume);
+    };
+    if ($@) {
+        say localtime(time) . ' Caught exception when reconnecting ' . $@ if $self->verbose;
+        Mojo::IOLoop->timer(10 => sub { $self->gw_reconnect($resume) });
+    }
+}
+
 # This sub establishes a connection to the Discord Gateway web socket
 # WS URL must be passed in.
 # Optionally pass in a boolean $reconnect (1 or 0) to tell connect whether to send an IDENTIFY or a RESUME
@@ -323,12 +335,12 @@ sub on_finish
         if ( $self->allow_resume )
         {
             say localtime(time) . " Reconnecting and resuming previous session in 30 seconds..." if $self->verbose;
-            Mojo::IOLoop->timer(10 => sub { $self->gw_connect($self->gateway(), 1) });
+            Mojo::IOLoop->timer(10 => sub { $self->gw_reconnect(1) });
         }
         else
         {
             say localtime(time) . " Reconnecting and starting a new session in 30 seconds..." if $self->verbose;
-            Mojo::IOLoop->timer(10 => sub { $self->gw_connect($self->gateway()) });
+            Mojo::IOLoop->timer(10 => sub { $self->gw_reconnect() });
         }
     }
     else
