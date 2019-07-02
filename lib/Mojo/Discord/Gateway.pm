@@ -233,9 +233,8 @@ sub gw_connect
     
         unless ($tx->is_websocket)
         {
-            $self->on_finish(-1, 'Websocket Handshake Failed');
-#            $self->{'tx'} = undef;
-#            say localtime(time) . ' WebSocket handshake failed!';
+            say localtime(time) . ' Not a websocket, reconnecting.' if $self->verbose;
+            Mojo::IOLoop->timer(10 => sub { $self->gw_reconnect() });
             return;
         }
     
